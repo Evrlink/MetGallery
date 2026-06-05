@@ -1,36 +1,41 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { Providers } from "./providers";
+import type { Metadata } from 'next'
+import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
+import './globals.css'
+import { Providers } from './providers'
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const cormorant = Cormorant_Garamond({
+  variable: '--font-display',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+})
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const dmSans = DM_Sans({
+  variable: '--font-body',
+  subsets: ['latin'],
+  weight: ['300', '400', '500'],
+})
 
 export const metadata: Metadata = {
-  title: "MoMA Gallery",
-  description: "Explore MoMA's art collection on Base",
+  title: 'MetGallery',
+  description: 'Explore The Met Photographs & Modern Art collection on Base',
   other: {
-    "base:app_id": "69f2a19c6daaf9236cfba3d9",
+    'base:app_id': process.env.NEXT_PUBLIC_BASE_APP_ID || '',
   },
-};
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
+    <html
+      lang="en"
+      className={`${cormorant.variable} ${dmSans.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col bg-ivory text-charcoal font-body">
         <Providers>{children}</Providers>
       </body>
     </html>
-  );
+  )
 }

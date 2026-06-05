@@ -1,4 +1,4 @@
-import Gallery from './gallery'
+import Gallery from '@/components/Gallery'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0

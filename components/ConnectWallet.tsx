@@ -11,33 +11,13 @@ export function ConnectWallet() {
 
   if (!isConnected) {
     return (
-      <div style={{ display: 'flex', gap: '8px' }}>
+      <div className="flex gap-2">
         {connectors.map((connector) => (
           <button
             key={connector.uid}
             onClick={() => connect({ connector })}
             disabled={isConnecting}
-            style={{
-              fontSize: '11px',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              padding: '6px 14px',
-              border: '0.5px solid #1a1a1a',
-              background: 'transparent',
-              color: '#1a1a1a',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              opacity: isConnecting ? 0.5 : 1,
-              transition: 'background 0.15s, color 0.15s',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = '#1a1a1a'
-              e.currentTarget.style.color = '#fff'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.color = '#1a1a1a'
-            }}
+            className="text-[11px] uppercase tracking-widest px-3.5 py-1.5 border border-gold/60 bg-transparent text-gold cursor-pointer font-body transition-colors hover:bg-gold hover:text-ivory disabled:opacity-50"
           >
             {connector.name === 'Base Account' ? 'Connect' : connector.name}
           </button>
@@ -47,32 +27,13 @@ export function ConnectWallet() {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <span style={{ fontSize: '11px', letterSpacing: '0.06em', color: '#999', fontFamily: 'monospace' }}>
+    <div className="flex items-center gap-3">
+      <span className="text-[11px] tracking-wide text-stone font-mono">
         {address?.slice(0, 6)}…{address?.slice(-4)}
       </span>
       <button
-      onClick={() => disconnect()}
-        style={{
-          fontSize: '11px',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          padding: '6px 14px',
-          border: '0.5px solid #ccc',
-          background: 'transparent',
-          color: '#999',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          transition: 'border-color 0.15s, color 0.15s',
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.borderColor = '#1a1a1a'
-          e.currentTarget.style.color = '#1a1a1a'
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.borderColor = '#ccc'
-          e.currentTarget.style.color = '#999'
-        }}
+        onClick={() => disconnect()}
+        className="text-[11px] uppercase tracking-widest px-3.5 py-1.5 border border-stone/40 bg-transparent text-stone cursor-pointer font-body transition-colors hover:border-gold hover:text-gold"
       >
         Disconnect
       </button>

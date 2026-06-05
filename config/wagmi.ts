@@ -7,8 +7,8 @@ export const config = createConfig({
   connectors: [
     injected(),
     baseAccount({
-      appName: 'MoMA Gallery',
-      appLogoUrl: 'https://moma-gallery.vercel.app/favicon.ico',
+      appName: 'MetGallery',
+      appLogoUrl: 'https://metgallery.vercel.app/favicon.ico',
     }),
   ],
   storage: createStorage({ storage: cookieStorage }),
