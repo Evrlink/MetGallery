@@ -8,7 +8,6 @@ export const config = createConfig({
     injected(),
     baseAccount({
       appName: 'MetGallery',
-      appLogoUrl: 'https://metgallery.vercel.app/favicon.ico',
     }),
   ],
   storage: createStorage({ storage: cookieStorage }),

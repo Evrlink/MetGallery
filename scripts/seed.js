@@ -1,25 +1,44 @@
 const { Redis } = require('@upstash/redis')
 const fs = require('fs')
+const path = require('path')
 
-const env = fs.readFileSync('.env.local', 'utf-8')
-env.split('\n').forEach((l) => {
-  const [k, ...v] = l.split('=')
-  if (k && v.length)
-    process.env[k.trim()] = v.join('=').trim().replace(/"/g, '')
-})
+const envPath = path.join(process.cwd(), '.env.local')
+if (!fs.existsSync(envPath)) {
+  console.error('Missing .env.local. Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.')
+  process.exit(1)
+}
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-})
+fs.readFileSync(envPath, 'utf-8')
+  .split('\n')
+  .forEach((line) => {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) return
+    const eq = trimmed.indexOf('=')
+    if (eq === -1) return
+    const key = trimmed.slice(0, eq).trim()
+    const value = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, '')
+    if (key) process.env[key] = value
+  })
+
+const url = process.env.UPSTASH_REDIS_REST_URL
+const token = process.env.UPSTASH_REDIS_REST_TOKEN
+if (!url?.startsWith('https://') || !token) {
+  console.error('Invalid Upstash config in .env.local')
+  process.exit(1)
+}
+
+const redis = new Redis({ url, token })
 
 const MET_BASE = 'https://collectionapi.metmuseum.org/public/collection/v1'
 const DEPARTMENTS = [19, 21]
 const TARGET_COUNT = 500
+const ARTWORK_IDS_KEY = 'metgallery:artwork:ids'
+const artworkKey = (id) => `metgallery:artwork:${id}`
+const insightKey = (id) => `metgallery:insight:${id}`
 
-async function fetchJson(url) {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`)
+async function fetchJson(fetchUrl) {
+  const res = await fetch(fetchUrl)
+  if (!res.ok) throw new Error(`Failed to fetch ${fetchUrl}: ${res.status}`)
   return res.json()
 }
 
@@ -55,8 +74,26 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms))
 }
 
+async function clearCache() {
+  const ids = await redis.smembers(ARTWORK_IDS_KEY)
+  if (!ids.length) {
+    console.log('Redis cache already empty.')
+    return
+  }
+  const pipeline = redis.pipeline()
+  for (const id of ids) {
+    pipeline.del(artworkKey(id))
+    pipeline.del(insightKey(id))
+  }
+  pipeline.del(ARTWORK_IDS_KEY)
+  await pipeline.exec()
+  console.log(`Cleared ${ids.length} cached artworks and insights.`)
+}
+
 async function seed() {
-  console.log('Fetching Met Museum object IDs (departments 19 & 21)...')
+  console.log('MetGallery seed — The Met API (departments 19 & 21)')
+  await clearCache()
+
   const allIds = new Set()
   for (const dept of DEPARTMENTS) {
     const ids = await fetchDepartmentIds(dept)
@@ -66,18 +103,8 @@ async function seed() {
   console.log(`Total unique object IDs: ${allIds.size}`)
 
   const shuffled = [...allIds].sort(() => Math.random() - 0.5)
-
-  console.log('Clearing old data...')
-  const oldIds = await redis.smembers('artwork:ids')
-  if (oldIds.length) {
-    const p = redis.pipeline()
-    oldIds.forEach((id) => p.del('artwork:' + id))
-    p.del('artwork:ids')
-    await p.exec()
-  }
-
-  console.log(`Loading up to ${TARGET_COUNT} artworks with images...`)
   const artworks = []
+
   for (const objectId of shuffled) {
     if (artworks.length >= TARGET_COUNT) break
     const artwork = await fetchObject(objectId)
@@ -92,12 +119,15 @@ async function seed() {
 
   const pipeline = redis.pipeline()
   artworks.forEach((a) => {
-    pipeline.set('artwork:' + a.id, JSON.stringify(a))
-    pipeline.sadd('artwork:ids', String(a.id))
+    pipeline.set(artworkKey(a.id), a)
+    pipeline.sadd(ARTWORK_IDS_KEY, String(a.id))
   })
   await pipeline.exec()
 
-  console.log(`Done! ${artworks.length} artworks loaded from The Met.`)
+  console.log(`Done. ${artworks.length} artworks cached in Redis.`)
 }
 
-seed().catch(console.error)
+seed().catch((err) => {
+  console.error(err)
+  process.exit(1)
+})

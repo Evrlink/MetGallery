@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getRedis } from '@/lib/redis'
+import { artworkKey, getRedis } from '@/lib/redis'
 
 export async function GET(
   _request: NextRequest,
@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const { id } = await params
   const redis = getRedis()
-  const artwork = await redis.get(`artwork:${id}`)
+  const artwork = await redis.get(artworkKey(id))
 
   if (!artwork) {
     return Response.json({ error: 'Artwork not found' }, { status: 404 })

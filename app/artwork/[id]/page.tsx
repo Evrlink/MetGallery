@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Nav } from '@/components/Nav'
 import { AIInsightPanel } from '@/components/AIInsightPanel'
-import { getRedis } from '@/lib/redis'
+import { artworkKey, getRedis } from '@/lib/redis'
 import type { Artwork } from '@/types/artwork'
 import { notFound } from 'next/navigation'
 
@@ -13,7 +13,7 @@ interface PageProps {
 
 export default async function ArtworkPage({ params }: PageProps) {
   const { id } = await params
-  const artwork = await getRedis().get<Artwork>(`artwork:${id}`)
+  const artwork = await getRedis().get<Artwork>(artworkKey(id))
 
   if (!artwork) notFound()
 
