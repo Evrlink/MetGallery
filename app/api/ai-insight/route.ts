@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildInsightPrompt } from '@/lib/ai-insight'
+import { getAnthropicApiKey } from '@/lib/env'
 import { getRedis, insightKey } from '@/lib/redis'
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey || apiKey.startsWith('your_')) {
+    const apiKey = getAnthropicApiKey()
+    if (!apiKey) {
       return NextResponse.json(
         { insight: 'AI insights are not configured. Add ANTHROPIC_API_KEY to .env.local.' },
         { status: 503 }

@@ -31,8 +31,10 @@ npm run dev
 
 ## Scripts
 
-- `npm run seed` — fetch Met artworks into Upstash Redis (clears existing MetGallery cache first)
-- `npm run build` — production build
+- `npm run verify:clean` — fail if hardcoded app IDs, wallets, or MoMA references exist
+- `npm run clear-cache` — empty MetGallery and legacy Redis keys
+- `npm run seed` — fetch Met artworks into Upstash Redis (clears cache first)
+- `npm run build` — runs verify, then production build
 
 ## API
 

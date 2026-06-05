@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "node scripts/seed.js"
+    "verify:clean": "node scripts/verify-no-hardcoded-ids.js",
+    "clear-cache": "node scripts/clear-cache.js",
+    "seed": "node scripts/seed.js",
+    "prebuild": "npm run verify:clean"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",

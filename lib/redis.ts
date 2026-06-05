@@ -3,8 +3,12 @@ import { Redis } from '@upstash/redis'
 let redisClient: Redis | null = null
 
 const ARTWORK_IDS_KEY = 'metgallery:artwork:ids'
+const LEGACY_ARTWORK_IDS_KEY = 'artwork:ids'
+
 export const artworkKey = (id: string | number) => `metgallery:artwork:${id}`
 export const insightKey = (id: string | number) => `metgallery:insight:${id}`
+const legacyArtworkKey = (id: string | number) => `artwork:${id}`
+const legacyInsightKey = (id: string | number) => `insight:${id}`
 
 function isValidRedisConfig(): boolean {
   const url = process.env.UPSTASH_REDIS_REST_URL
@@ -27,17 +31,36 @@ export function getRedis(): Redis {
   return redisClient
 }
 
-export async function clearMetGalleryCache(redis: Redis): Promise<void> {
-  const ids = await redis.smembers(ARTWORK_IDS_KEY)
-  if (!ids.length) return
+async function clearKeySet(
+  redis: Redis,
+  idsKey: string,
+  keyForId: (id: string) => string,
+  extraKeyForId?: (id: string) => string
+): Promise<number> {
+  const ids = await redis.smembers(idsKey)
+  if (!ids.length) return 0
 
   const pipeline = redis.pipeline()
   for (const id of ids) {
-    pipeline.del(artworkKey(id))
-    pipeline.del(insightKey(id))
+    pipeline.del(keyForId(id))
+    if (extraKeyForId) pipeline.del(extraKeyForId(id))
   }
-  pipeline.del(ARTWORK_IDS_KEY)
+  pipeline.del(idsKey)
   await pipeline.exec()
+  return ids.length
 }
 
-export { ARTWORK_IDS_KEY }
+export async function clearMetGalleryCache(redis: Redis): Promise<void> {
+  const current = await clearKeySet(redis, ARTWORK_IDS_KEY, (id) => artworkKey(id), (id) =>
+    insightKey(id)
+  )
+  const legacy = await clearKeySet(
+    redis,
+    LEGACY_ARTWORK_IDS_KEY,
+    (id) => legacyArtworkKey(id),
+    (id) => legacyInsightKey(id)
+  )
+
+}
+
+export { ARTWORK_IDS_KEY, LEGACY_ARTWORK_IDS_KEY }

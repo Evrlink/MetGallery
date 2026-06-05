@@ -33,8 +33,11 @@ const MET_BASE = 'https://collectionapi.metmuseum.org/public/collection/v1'
 const DEPARTMENTS = [19, 21]
 const TARGET_COUNT = 500
 const ARTWORK_IDS_KEY = 'metgallery:artwork:ids'
+const LEGACY_ARTWORK_IDS_KEY = 'artwork:ids'
 const artworkKey = (id) => `metgallery:artwork:${id}`
 const insightKey = (id) => `metgallery:insight:${id}`
+const legacyArtworkKey = (id) => `artwork:${id}`
+const legacyInsightKey = (id) => `insight:${id}`
 
 async function fetchJson(fetchUrl) {
   const res = await fetch(fetchUrl)
@@ -74,20 +77,27 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms))
 }
 
-async function clearCache() {
-  const ids = await redis.smembers(ARTWORK_IDS_KEY)
-  if (!ids.length) {
-    console.log('Redis cache already empty.')
-    return
-  }
+async function clearKeySet(idsKey, keyForId, extraKeyForId) {
+  const ids = await redis.smembers(idsKey)
+  if (!ids.length) return 0
   const pipeline = redis.pipeline()
   for (const id of ids) {
-    pipeline.del(artworkKey(id))
-    pipeline.del(insightKey(id))
+    pipeline.del(keyForId(id))
+    if (extraKeyForId) pipeline.del(extraKeyForId(id))
   }
-  pipeline.del(ARTWORK_IDS_KEY)
+  pipeline.del(idsKey)
   await pipeline.exec()
-  console.log(`Cleared ${ids.length} cached artworks and insights.`)
+  return ids.length
+}
+
+async function clearCache() {
+  const current = await clearKeySet(ARTWORK_IDS_KEY, artworkKey, insightKey)
+  const legacy = await clearKeySet(LEGACY_ARTWORK_IDS_KEY, legacyArtworkKey, legacyInsightKey)
+  if (current === 0 && legacy === 0) {
+    console.log('Redis cache already empty.')
+  } else {
+    console.log(`Cleared ${current} MetGallery and ${legacy} legacy cached entries.`)
+  }
 }
 
 async function seed() {
