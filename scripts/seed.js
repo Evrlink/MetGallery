@@ -34,7 +34,7 @@ const MET_OBJECTS_CSV_URL =
 const MET_IMAGES_CSV_URL =
   'https://raw.githubusercontent.com/gregsadetsky/met-openaccess-images/master/met-openaccess-images.csv'
 const DEPARTMENT = 'Modern and Contemporary Art'
-const TARGET_COUNT = 200
+const TARGET_COUNT = 100
 const IMAGE_BASE = 'https://images.metmuseum.org/CRDImages/'
 const ARTWORK_IDS_KEY = 'metgallery:artwork:ids'
 const LEGACY_ARTWORK_IDS_KEY = 'artwork:ids'
@@ -140,7 +140,7 @@ async function loadArtworksFromCsv() {
       artist: fields[artistIdx]?.trim() || 'Unknown Artist',
       year: fields[dateIdx]?.trim() || '',
       medium: fields[mediumIdx]?.trim() || '',
-      department: DEPARTMENT,
+      department: fields[departmentIdx]?.trim() || DEPARTMENT,
       imageUrl: `${IMAGE_BASE}${urlpath}`,
       objectUrl:
         fields[linkIdx]?.trim() ||
@@ -197,7 +197,9 @@ async function verifyRedis() {
 }
 
 async function seed() {
-  console.log('MetGallery seed — Met Open Access CSV (Modern and Contemporary Art)')
+  console.log(
+    'MetGallery seed — CSV only (MetObjects + met-openaccess-images, no Met API)'
+  )
   await verifyRedis()
   await clearCache()
 
