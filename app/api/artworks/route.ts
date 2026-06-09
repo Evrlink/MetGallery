@@ -4,41 +4,8 @@ import type { Artwork } from '@/types/artwork'
 
 export const dynamic = 'force-dynamic'
 
-const SEARCH_URL =
-  'https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&departmentId=21&q=art'
-
 const MET_OBJECTS_URL =
   'https://collectionapi.metmuseum.org/public/collection/v1/objects'
-
-let artworkPool: Artwork[] | null = null
-
-async function loadArtworkPool(): Promise<Artwork[]> {
-  if (artworkPool) return artworkPool
-
-  const searchRes = await fetch(SEARCH_URL)
-  if (!searchRes.ok) {
-    throw new Error(`Met search failed: ${searchRes.status}`)
-  }
-
-  const searchData = await searchRes.json()
-  const objectIds: number[] = (searchData.objectIDs ?? []).slice(0, 200)
-
-  const artworks: Artwork[] = []
-
-  for (const objectId of objectIds) {
-    const res = await fetch(`${MET_OBJECTS_URL}/${objectId}`)
-    if (!res.ok) continue
-
-    const obj = await res.json()
-    if (!obj.primaryImage) continue
-
-    const artwork = toArtwork(obj)
-    if (artwork) artworks.push(artwork)
-  }
-
-  artworkPool = artworks
-  return artworks
-}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -46,11 +13,44 @@ export async function GET(request: NextRequest) {
     Math.max(parseInt(searchParams.get('count') || '20', 10), 1),
     50
   )
+  const exclude = new Set(
+    (searchParams.get('exclude') ?? '')
+      .split(',')
+      .map((id) => Number.parseInt(id, 10))
+      .filter((id) => !Number.isNaN(id))
+  )
 
   try {
-    const pool = await loadArtworkPool()
-    const shuffled = [...pool].sort(() => Math.random() - 0.5)
-    return Response.json(shuffled.slice(0, count))
+    const listRes = await fetch(`${MET_OBJECTS_URL}?departmentIds=21`)
+    if (!listRes.ok) {
+      throw new Error(`Met objects list failed: ${listRes.status}`)
+    }
+
+    const listData = await listRes.json()
+    const allIds: number[] = listData.objectIDs ?? []
+
+    const sampledIds = [...allIds]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 100)
+
+    const artworks: Artwork[] = []
+
+    for (const objectId of sampledIds) {
+      if (exclude.has(objectId)) continue
+
+      const res = await fetch(`${MET_OBJECTS_URL}/${objectId}`)
+      if (!res.ok) continue
+
+      const obj = await res.json()
+      if (!obj.primaryImage && !obj.primaryImageSmall) continue
+
+      const artwork = toArtwork(obj)
+      if (artwork) artworks.push(artwork)
+
+      if (artworks.length >= count) break
+    }
+
+    return Response.json(artworks)
   } catch (err) {
     console.error('[api/artworks] failed:', err)
     return Response.json(

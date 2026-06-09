@@ -5,10 +5,21 @@ import { Nav } from '@/components/Nav'
 import { ArtworkCard } from '@/components/ArtworkCard'
 import type { Artwork, ArtworkLayout } from '@/types/artwork'
 
-const DESKTOP_COLS = 5
+const DESKTOP_COLS = 3
 const MOBILE_COLS = 2
-const GAP = 16
+const GAP = 10.18
 const BATCH_SIZE = 20
+
+const mainStyle = {
+  marginLeft: '65.4px',
+  marginRight: '65.4px',
+  marginTop: 0,
+  columnGap: '10.18px',
+  rowGap: '10.18px',
+  scrollMarginTop: '70.18px',
+  display: 'flex',
+  flexDirection: 'column' as const,
+}
 
 function computeColHeightsFromItems(
   items: ArtworkLayout[],
@@ -113,12 +124,15 @@ export default function Gallery() {
     [COLS, layoutBatch]
   )
 
-  const fetchArtworks = useCallback(async (count: number) => {
-    const res = await fetch(`/api/artworks?count=${count}`)
+  const fetchArtworks = useCallback(async (count: number, excludeIds: number[] = []) => {
+    const params = new URLSearchParams({ count: String(count) })
+    if (excludeIds.length) {
+      params.set('exclude', excludeIds.join(','))
+    }
+    const res = await fetch(`/api/artworks?${params}`)
     const data = await res.json()
     if (!res.ok) {
-      const detail = data.details ? ` (${data.details})` : ''
-      throw new Error((data.error || 'Failed to load artworks') + detail)
+      throw new Error(data.error || 'Failed to load artworks')
     }
     return data as Artwork[]
   }, [])
@@ -163,7 +177,8 @@ export default function Gallery() {
       return
     loadingMoreRef.current = true
     try {
-      const artworks = await fetchArtworks(BATCH_SIZE)
+      const existingIds = artworksRef.current.map((a) => a.id)
+      const artworks = await fetchArtworks(BATCH_SIZE, existingIds)
       if (!artworks.length) return
       artworksRef.current = [...artworksRef.current, ...artworks]
       const prev = itemsRef.current
@@ -206,42 +221,43 @@ export default function Gallery() {
   }, [gridHeight, items.length])
 
   return (
-    <div className="bg-parchment min-h-screen font-body">
+    <div
+      className="min-h-screen font-body"
+      style={{ backgroundColor: '#F5F3F0' }}
+    >
       <Nav />
-      <main className="pt-[88.5066px]">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-12">
-          {loading && !items.length && (
-            <p className="py-16 text-center font-body text-sm text-neutral-gray">
-              Loading artworks from The Met…
-            </p>
-          )}
-          {error && !items.length && (
-            <p className="py-16 text-center font-body text-sm text-met-red">
-              {error}
-            </p>
-          )}
+      <main style={{ ...mainStyle, backgroundColor: '#F5F3F0' }}>
+        {loading && !items.length && (
+          <p className="py-16 text-center font-body text-sm text-neutral-gray">
+            Loading artworks from The Met…
+          </p>
+        )}
+        {error && !items.length && (
+          <p className="py-16 text-center font-body text-sm text-met-red">
+            {error}
+          </p>
+        )}
+        <div
+          ref={gridRef}
+          className="relative w-full"
+          style={{ height: gridHeight, paddingTop: '32px' }}
+        >
+          {colWidth > 0 &&
+            items.map((item) => (
+              <ArtworkCard
+                key={item.id}
+                href={`/artwork/${item.id}`}
+                imageUrl={item.imageUrl}
+                alt={item.title}
+                width={colWidth}
+                style={{ left: item.x, top: item.y }}
+              />
+            ))}
           <div
-            ref={gridRef}
-            className="relative"
-            style={{ height: gridHeight }}
-          >
-            {colWidth > 0 &&
-              items.map((item) => (
-                <ArtworkCard
-                  key={`${item.id}-${item.x}-${item.y}`}
-                  href={`/artwork/${item.id}`}
-                  imageUrl={item.imageUrl}
-                  alt={item.title}
-                  width={colWidth}
-                  style={{ left: item.x, top: item.y }}
-                />
-              ))}
-            <div
-              ref={sentinelRef}
-              aria-hidden
-              className="absolute left-0 bottom-0 w-full h-px pointer-events-none opacity-0"
-            />
-          </div>
+            ref={sentinelRef}
+            aria-hidden
+            className="absolute left-0 bottom-0 w-full h-px pointer-events-none opacity-0"
+          />
         </div>
       </main>
     </div>

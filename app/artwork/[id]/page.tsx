@@ -17,16 +17,24 @@ export default async function ArtworkPage({ params }: PageProps) {
   if (!artwork) notFound()
 
   return (
-    <div className="bg-ivory min-h-screen font-body">
+    <div className="bg-parchment min-h-screen font-body">
       <Nav />
       <Link
         href="/"
-        className="fixed top-[88.5066px] left-5 md:left-8 z-40 font-display text-lg text-stone hover:text-gold transition-colors"
+        className="fixed top-[70.18px] z-40 font-display text-lg text-stone hover:text-gold transition-colors"
+        style={{ left: '65.4px' }}
       >
         ← Back
       </Link>
 
-      <div className="pt-[88.5066px] flex flex-col lg:flex-row min-h-screen">
+      <div
+        className="flex flex-col lg:flex-row min-h-screen"
+        style={{
+          marginLeft: '65.4px',
+          marginRight: '65.4px',
+          scrollMarginTop: '70.18px',
+        }}
+      >
         <div className="lg:flex-[0_0_58%] flex justify-center items-center p-8 md:p-12 lg:p-16 bg-ivory">
           <img
             src={artwork.imageUrl}

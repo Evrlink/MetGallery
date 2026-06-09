@@ -56,8 +56,12 @@ export function ArtworkCard({
           transition: isHovering
             ? 'transform 0.1s ease-out'
             : 'transform 0.3s ease-out',
+          backgroundColor: '#FFFFFF',
+          borderRadius: '8px',
+          boxShadow: 'none',
+          border: 'none',
         }}
-        className="bg-museum-white rounded-lg overflow-hidden"
+        className="overflow-hidden"
       >
         <div className="relative">
           <img src={imageUrl} alt={alt} className="w-full h-auto block" />
