@@ -29,19 +29,13 @@ if (!url?.startsWith('https://') || !token) {
 
 const redis = new Redis({ url, token })
 
-const MET_BASE = 'https://collectionapi.metmuseum.org/public/collection/v1'
-const MET_HEADERS = {
-  'User-Agent': 'MetGallery/1.0 (educational; seed script)',
-  Accept: 'application/json',
-}
-const DEPARTMENTS = [
-  { id: 19, queries: ['photograph', 'photo', 'print'] },
-  { id: 21, queries: ['painting', 'sculpture', 'modern'] },
-]
-const TARGET_COUNT = 500
-const CONCURRENCY = 8
-const FETCH_TIMEOUT_MS = 15000
-const MAX_ATTEMPTS = TARGET_COUNT * 12
+const MET_OBJECTS_CSV_URL =
+  'https://media.githubusercontent.com/media/metmuseum/openaccess/master/MetObjects.csv'
+const MET_IMAGES_CSV_URL =
+  'https://raw.githubusercontent.com/gregsadetsky/met-openaccess-images/master/met-openaccess-images.csv'
+const DEPARTMENT = 'Modern and Contemporary Art'
+const TARGET_COUNT = 200
+const IMAGE_BASE = 'https://images.metmuseum.org/CRDImages/'
 const ARTWORK_IDS_KEY = 'metgallery:artwork:ids'
 const LEGACY_ARTWORK_IDS_KEY = 'artwork:ids'
 const artworkKey = (id) => `metgallery:artwork:${id}`
@@ -49,84 +43,120 @@ const insightKey = (id) => `metgallery:insight:${id}`
 const legacyArtworkKey = (id) => `artwork:${id}`
 const legacyInsightKey = (id) => `insight:${id}`
 
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms))
+function parseCsvLine(line) {
+  const fields = []
+  let current = ''
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"'
+        i++
+      } else {
+        inQuotes = !inQuotes
+      }
+    } else if (char === ',' && !inQuotes) {
+      fields.push(current)
+      current = ''
+    } else {
+      current += char
+    }
+  }
+
+  fields.push(current)
+  return fields
 }
 
-async function fetchJson(fetchUrl, attempt = 1) {
-  const maxAttempts = 3
+async function loadImagePathMap() {
+  console.log('Fetching image paths CSV...')
+  const res = await fetch(MET_IMAGES_CSV_URL)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch images CSV: ${res.status}`)
+  }
 
-  try {
-    const res = await fetch(fetchUrl, {
-      headers: MET_HEADERS,
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  const text = await res.text()
+  const lines = text.split('\n')
+  const map = new Map()
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i]?.trim()
+    if (!line) continue
+
+    const comma = line.indexOf(',')
+    if (comma === -1) continue
+
+    const id = Number.parseInt(line.slice(0, comma), 10)
+    const urlpath = line.slice(comma + 1).trim()
+    if (!Number.isNaN(id) && urlpath) {
+      map.set(id, urlpath)
+    }
+  }
+
+  console.log(`Loaded ${map.size} image paths.`)
+  return map
+}
+
+async function loadArtworksFromCsv() {
+  const imagePaths = await loadImagePathMap()
+
+  console.log('Fetching MetObjects CSV...')
+  const res = await fetch(MET_OBJECTS_CSV_URL)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch MetObjects CSV: ${res.status}`)
+  }
+
+  const text = await res.text()
+  const lines = text.split('\n')
+  const headers = parseCsvLine(lines[0])
+  const indexOf = (name) => headers.indexOf(name)
+  const objectIdIdx = indexOf('Object ID')
+  const departmentIdx = indexOf('Department')
+  const titleIdx = indexOf('Title')
+  const artistIdx = indexOf('Artist Display Name')
+  const dateIdx = indexOf('Object Date')
+  const mediumIdx = indexOf('Medium')
+  const linkIdx = indexOf('Link Resource')
+
+  const candidates = []
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i]?.trim()
+    if (!line) continue
+
+    const fields = parseCsvLine(line)
+    if (fields[departmentIdx] !== DEPARTMENT) continue
+
+    const id = Number.parseInt(fields[objectIdIdx] ?? '', 10)
+    const title = fields[titleIdx]?.trim()
+    const urlpath = imagePaths.get(id)
+
+    if (!title || Number.isNaN(id) || !urlpath) continue
+
+    candidates.push({
+      id,
+      title,
+      artist: fields[artistIdx]?.trim() || 'Unknown Artist',
+      year: fields[dateIdx]?.trim() || '',
+      medium: fields[mediumIdx]?.trim() || '',
+      department: DEPARTMENT,
+      imageUrl: `${IMAGE_BASE}${urlpath}`,
+      objectUrl:
+        fields[linkIdx]?.trim() ||
+        `https://www.metmuseum.org/art/collection/search/${id}`,
     })
-
-    const contentType = res.headers.get('content-type') || ''
-    const body = await res.text()
-
-    if (!res.ok) {
-      const blocked = res.status === 403 || body.includes('Incapsula')
-      const err = new Error(
-        `Met API HTTP ${res.status} for ${fetchUrl}: ${body.slice(0, 160)}`
-      )
-      err.retryable = blocked && attempt < maxAttempts
-      throw err
-    }
-
-    if (!contentType.includes('application/json')) {
-      const err = new Error(
-        `Met API returned non-JSON for ${fetchUrl}: ${body.slice(0, 160)}`
-      )
-      err.retryable = attempt < maxAttempts
-      throw err
-    }
-
-    return JSON.parse(body)
-  } catch (err) {
-    if (err.retryable) {
-      const delay = attempt * 2000
-      console.warn(`  Met API retry ${attempt}/${maxAttempts - 1} in ${delay}ms...`)
-      await sleep(delay)
-      return fetchJson(fetchUrl, attempt + 1)
-    }
-    throw err
-  }
-}
-
-async function fetchDepartmentImageIds({ id, queries }) {
-  const ids = new Set()
-
-  for (const query of queries) {
-    const searchUrl = `${MET_BASE}/search?departmentId=${id}&hasImages=true&q=${encodeURIComponent(query)}`
-    console.log(`  Searching department ${id} (q="${query}", hasImages=true)...`)
-    const data = await fetchJson(searchUrl)
-    const found = data.objectIDs || []
-    console.log(`    Found ${found.length} object IDs`)
-    found.forEach((objectId) => ids.add(objectId))
-    await sleep(200)
   }
 
-  return [...ids]
-}
-
-async function fetchObject(objectId) {
-  const obj = await fetchJson(`${MET_BASE}/objects/${objectId}`)
-  const imageUrl = obj.primaryImage || obj.primaryImageSmall
-  if (!imageUrl || !obj.title) return null
-
-  return {
-    id: obj.objectID,
-    title: obj.title,
-    artist: obj.artistDisplayName || 'Unknown Artist',
-    year: obj.objectDate || '',
-    medium: obj.medium || '',
-    department: obj.department || '',
-    imageUrl,
-    objectUrl:
-      obj.objectURL ||
-      `https://www.metmuseum.org/art/collection/search/${obj.objectID}`,
+  if (!candidates.length) {
+    throw new Error(
+      `No artworks found for department "${DEPARTMENT}" with matching images.`
+    )
   }
+
+  console.log(`Found ${candidates.length} matching artworks with images.`)
+  const shuffled = [...candidates].sort(() => Math.random() - 0.5)
+  return shuffled.slice(0, TARGET_COUNT)
 }
 
 async function clearKeySet(idsKey, keyForId, extraKeyForId) {
@@ -167,68 +197,11 @@ async function verifyRedis() {
 }
 
 async function seed() {
-  console.log('MetGallery seed — The Met API (departments 19 & 21)')
+  console.log('MetGallery seed — Met Open Access CSV (Modern and Contemporary Art)')
   await verifyRedis()
   await clearCache()
 
-  const allIds = new Set()
-  for (const dept of DEPARTMENTS) {
-    const ids = await fetchDepartmentImageIds(dept)
-    ids.forEach((objectId) => allIds.add(objectId))
-  }
-
-  if (!allIds.size) {
-    throw new Error(
-      'No image-bearing object IDs found. The Met API may be blocking requests (HTTP 403). Try again later.'
-    )
-  }
-
-  console.log(`Total unique image-bearing object IDs: ${allIds.size}`)
-
-  const shuffled = [...allIds].sort(() => Math.random() - 0.5)
-  const artworks = []
-  let attempts = 0
-
-  for (
-    let i = 0;
-    i < shuffled.length &&
-    artworks.length < TARGET_COUNT &&
-    attempts < MAX_ATTEMPTS;
-    i += CONCURRENCY
-  ) {
-    const batch = shuffled.slice(i, i + CONCURRENCY)
-    attempts += batch.length
-
-    const results = await Promise.all(
-      batch.map(async (objectId) => {
-        try {
-          return await fetchObject(objectId)
-        } catch (err) {
-          console.warn(`  Skipping object ${objectId}: ${err.message}`)
-          return null
-        }
-      })
-    )
-
-    for (const artwork of results) {
-      if (artwork) artworks.push(artwork)
-      if (artworks.length >= TARGET_COUNT) break
-    }
-
-    if (attempts % 40 === 0 || artworks.length % 25 === 0) {
-      console.log(
-        `  Progress: ${artworks.length}/${TARGET_COUNT} artworks (${attempts} API calls)...`
-      )
-    }
-
-    await sleep(100)
-  }
-
-  if (!artworks.length) {
-    throw new Error(
-      `Fetched 0 artworks after ${attempts} attempts. Check Met API availability.`
-    )
-  }
+  const artworks = await loadArtworksFromCsv()
 
   console.log(`Writing ${artworks.length} artworks to Redis...`)
   const pipeline = redis.pipeline()
@@ -243,10 +216,5 @@ async function seed() {
 
 seed().catch((err) => {
   console.error('Seed failed:', err.message)
-  if (String(err.message).includes('403') || String(err.message).includes('Incapsula')) {
-    console.error(
-      'The Met API appears to be blocking requests from this network. Wait a few minutes and retry, or run seed from a different connection.'
-    )
-  }
   process.exit(1)
 })

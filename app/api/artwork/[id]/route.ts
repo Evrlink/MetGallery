@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { fetchArtworkById } from '@/lib/met-api'
+import { fetchArtworkById } from '@/lib/artworks'
 
 export const dynamic = 'force-dynamic'
 

@@ -1,6 +1,6 @@
 # MetGallery
 
-Browse The Metropolitan Museum of Art collection — **Photographs** (department 19) and **Modern Art** (department 21) — with AI-generated educational insights on Base.
+Browse The Metropolitan Museum of Art **Modern and Contemporary Art** collection with AI-generated educational insights on Base.
 
 ## Stack
 
@@ -33,7 +33,7 @@ npm run dev
 
 - `npm run verify:clean` — fail if hardcoded app IDs, wallets, or MoMA references exist
 - `npm run clear-cache` — empty MetGallery and legacy Redis keys
-- `npm run seed` — fetch Met artworks into Upstash Redis (clears cache first)
+- `npm run seed` — load 200 artworks from Met Open Access CSV into Upstash Redis (clears cache first)
 - `npm run build` — runs verify, then production build
 
 ## API
@@ -45,4 +45,6 @@ npm run dev
 | `POST /api/ai-insight` | Claude insight (cached 7 days) |
 | `GET /base-verification.html` | Base app verification (uses `NEXT_PUBLIC_BASE_APP_ID`) |
 
-Data source: [Met Collection API](https://collectionapi.metmuseum.org/public/collection/v1/)
+| `GET /api/seed` | Seed Redis from Met Open Access CSV (requires `x-seed-secret` header) |
+
+Data source: [Met Open Access CSV](https://github.com/metmuseum/openaccess) and [met-openaccess-images](https://github.com/gregsadetsky/met-openaccess-images)

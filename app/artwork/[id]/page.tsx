@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Nav } from '@/components/Nav'
 import { AIInsightPanel } from '@/components/AIInsightPanel'
-import { fetchArtworkById } from '@/lib/met-api'
+import { fetchArtworkById } from '@/lib/artworks'
 import { notFound } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
