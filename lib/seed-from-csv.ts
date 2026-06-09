@@ -15,7 +15,7 @@ export const MET_IMAGES_CSV_URL =
   'https://raw.githubusercontent.com/gregsadetsky/met-openaccess-images/master/met-openaccess-images.csv'
 
 export const DEPARTMENT = 'Modern and Contemporary Art'
-export const TARGET_COUNT = 200
+export const TARGET_COUNT = 100
 export const IMAGE_BASE = 'https://images.metmuseum.org/CRDImages/'
 
 export interface SeedProgress {

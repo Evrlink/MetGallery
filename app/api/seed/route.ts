@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { runSeedFromCsv } from '@/lib/seed-from-csv'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300
+export const maxDuration = 900
 
 const SEED_SECRET = 'metgallery2024'
 
