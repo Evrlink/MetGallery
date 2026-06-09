@@ -22,10 +22,10 @@ export function ArtworkCard({
   const cardRef = useRef<HTMLDivElement>(null)
   const [tilt, setTilt] = useState('perspective(800px) rotateX(0deg) rotateY(0deg)')
   const [isHovering, setIsHovering] = useState(false)
-  const [loaded, setLoaded] = useState(false)
-  const [failed, setFailed] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
-  if (failed) return null
+  if (imageError) return null
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = cardRef.current
@@ -52,9 +52,9 @@ export function ArtworkCard({
       style={{
         ...style,
         width,
-        opacity: loaded ? 1 : 0,
+        opacity: imageLoaded ? 1 : 0,
         transition: 'opacity 0.35s ease-in-out',
-        pointerEvents: loaded ? 'auto' : 'none',
+        pointerEvents: imageLoaded ? 'auto' : 'none',
       }}
     >
       <div
@@ -83,8 +83,8 @@ export function ArtworkCard({
             className="w-full h-auto block"
             sizes={`${width}px`}
             unoptimized
-            onLoad={() => setLoaded(true)}
-            onError={() => setFailed(true)}
+            onLoad={() => setImageLoaded(true)}
+            onError={() => setImageError(true)}
           />
           <div
             className={`absolute inset-0 flex items-center justify-center transition-opacity duration-100 ${

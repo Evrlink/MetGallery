@@ -9,7 +9,6 @@ export async function fetchArtworkById(
 }
 
 export async function fetchArtworksFromRedis(
-  count: number,
   exclude: Set<number> = new Set()
 ): Promise<Artwork[]> {
   const redis = getRedis()
@@ -23,7 +22,6 @@ export async function fetchArtworksFromRedis(
 
     const artwork = await redis.get<Artwork>(artworkKey(artId))
     if (artwork) artworks.push(artwork)
-    if (artworks.length >= count) break
   }
 
   return artworks
