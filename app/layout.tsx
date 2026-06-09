@@ -1,19 +1,25 @@
 import type { Metadata } from 'next'
-import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
+import { EB_Garamond, Inter, Source_Sans_3 } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { buildAppMetadata } from '@/lib/base-metadata'
 
-const cormorant = Cormorant_Garamond({
+const ebGaramond = EB_Garamond({
   variable: '--font-display',
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500'],
 })
 
-const dmSans = DM_Sans({
+const sourceSans = Source_Sans_3({
   variable: '--font-body',
   subsets: ['latin'],
-  weight: ['300', '400', '500'],
+  weight: ['400', '600'],
+})
+
+const inter = Inter({
+  variable: '--font-inter',
+  subsets: ['latin'],
+  weight: ['400', '500'],
 })
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -28,9 +34,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${cormorant.variable} ${dmSans.variable} h-full antialiased`}
+      className={`${ebGaramond.variable} ${sourceSans.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-ivory text-charcoal font-body">
+      <body className="min-h-full flex flex-col bg-parchment text-gallery-black font-body">
         <Providers>{children}</Providers>
       </body>
     </html>

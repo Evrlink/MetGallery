@@ -1,13 +1,14 @@
 import { NextRequest } from 'next/server'
-import { artworkKey, getRedis } from '@/lib/redis'
+import { fetchArtworkById } from '@/lib/met-api'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const redis = getRedis()
-  const artwork = await redis.get(artworkKey(id))
+  const artwork = await fetchArtworkById(Number(id))
 
   if (!artwork) {
     return Response.json({ error: 'Artwork not found' }, { status: 404 })

@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { Nav } from '@/components/Nav'
 import { AIInsightPanel } from '@/components/AIInsightPanel'
-import { artworkKey, getRedis } from '@/lib/redis'
-import type { Artwork } from '@/types/artwork'
+import { fetchArtworkById } from '@/lib/met-api'
 import { notFound } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -13,7 +12,7 @@ interface PageProps {
 
 export default async function ArtworkPage({ params }: PageProps) {
   const { id } = await params
-  const artwork = await getRedis().get<Artwork>(artworkKey(id))
+  const artwork = await fetchArtworkById(Number(id))
 
   if (!artwork) notFound()
 
@@ -22,12 +21,12 @@ export default async function ArtworkPage({ params }: PageProps) {
       <Nav />
       <Link
         href="/"
-        className="fixed top-[4.5rem] left-5 md:left-8 z-40 font-display text-lg text-stone hover:text-gold transition-colors"
+        className="fixed top-[88.5066px] left-5 md:left-8 z-40 font-display text-lg text-stone hover:text-gold transition-colors"
       >
         ← Back
       </Link>
 
-      <div className="pt-[3.25rem] flex flex-col lg:flex-row min-h-screen">
+      <div className="pt-[88.5066px] flex flex-col lg:flex-row min-h-screen">
         <div className="lg:flex-[0_0_58%] flex justify-center items-center p-8 md:p-12 lg:p-16 bg-ivory">
           <img
             src={artwork.imageUrl}

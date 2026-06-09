@@ -3,6 +3,8 @@ import { Redis } from '@upstash/redis'
 let redisClient: Redis | null = null
 
 const ARTWORK_IDS_KEY = 'metgallery:artwork:ids'
+const SEARCH_IDS_KEY = 'metgallery:search:ids'
+const DEPARTMENT_IDS_KEY = 'metgallery:department:ids'
 const LEGACY_ARTWORK_IDS_KEY = 'artwork:ids'
 
 export const artworkKey = (id: string | number) => `metgallery:artwork:${id}`
@@ -29,6 +31,11 @@ export function getRedis(): Redis {
     })
   }
   return redisClient
+}
+
+export function tryGetRedis(): Redis | null {
+  if (!isValidRedisConfig()) return null
+  return getRedis()
 }
 
 async function clearKeySet(
@@ -63,4 +70,9 @@ export async function clearMetGalleryCache(redis: Redis): Promise<void> {
 
 }
 
-export { ARTWORK_IDS_KEY, LEGACY_ARTWORK_IDS_KEY }
+export {
+  ARTWORK_IDS_KEY,
+  SEARCH_IDS_KEY,
+  DEPARTMENT_IDS_KEY,
+  LEGACY_ARTWORK_IDS_KEY,
+}

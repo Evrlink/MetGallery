@@ -1,29 +1,34 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f4ef;
-  --foreground: #2c2825;
-  --gold: #c9a84c;
-  --ivory: #f7f4ef;
-  --charcoal: #2c2825;
-  --stone: #8a8279;
+  --color-met-red: #E40028;
+  --color-gallery-black: #1A1A1A;
+  --color-museum-white: #FFFFFF;
+  --color-parchment: #F5F3F0;
+  --color-neutral-gray: #6B6B6B;
+  --font-display: 'EB Garamond', Georgia, serif;
+  --font-body: 'Source Sans 3', system-ui, sans-serif;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-gold: var(--gold);
-  --color-ivory: var(--ivory);
-  --color-charcoal: var(--charcoal);
-  --color-stone: var(--stone);
+  --color-met-red: var(--color-met-red);
+  --color-gallery-black: var(--color-gallery-black);
+  --color-museum-white: var(--color-museum-white);
+  --color-parchment: var(--color-parchment);
+  --color-neutral-gray: var(--color-neutral-gray);
+  --color-ivory: var(--color-parchment);
+  --color-charcoal: var(--color-gallery-black);
+  --color-stone: var(--color-neutral-gray);
+  --color-gold: var(--color-met-red);
   --font-display: var(--font-display);
   --font-body: var(--font-body);
+  --font-inter: var(--font-inter);
   --font-sans: var(--font-body);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-parchment);
+  color: var(--color-gallery-black);
   font-family: var(--font-body), system-ui, sans-serif;
 }
 
@@ -33,4 +38,8 @@ body {
 
 .font-body {
   font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.font-inter {
+  font-family: var(--font-inter), 'Inter', sans-serif;
 }

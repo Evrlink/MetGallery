@@ -42,3 +42,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated Met CSV/index caches
+/data/artwork-index.json
+/data/csv-candidates.json
