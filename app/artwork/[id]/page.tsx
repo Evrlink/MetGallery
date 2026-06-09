@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { Nav } from '@/components/Nav'
 import { AIInsightPanel } from '@/components/AIInsightPanel'
@@ -36,10 +37,13 @@ export default async function ArtworkPage({ params }: PageProps) {
         }}
       >
         <div className="lg:flex-[0_0_58%] flex justify-center items-center p-8 md:p-12 lg:p-16 bg-ivory">
-          <img
+          <Image
             src={artwork.imageUrl}
             alt={artwork.title}
-            className="max-w-full max-h-[60vh] lg:max-h-[80vh] object-contain"
+            width={1200}
+            height={1200}
+            className="max-w-full max-h-[60vh] lg:max-h-[80vh] w-auto h-auto object-contain"
+            unoptimized
           />
         </div>
 
@@ -56,7 +60,7 @@ export default async function ArtworkPage({ params }: PageProps) {
             <p className="font-body text-sm text-stone/80 mb-6 italic">{artwork.medium}</p>
           )}
 
-          <AIInsightPanel artwork={artwork} />
+          <AIInsightPanel key={artwork.id} artwork={artwork} />
 
           <p className="font-body text-xs text-stone mt-auto pt-8">
             Source:{' '}

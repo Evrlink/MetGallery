@@ -13,8 +13,6 @@ export function AIInsightPanel({ artwork }: AIInsightPanelProps) {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    setInsight('')
 
     ;(async () => {
       try {

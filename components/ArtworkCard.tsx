@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRef, useState, type CSSProperties } from 'react'
 
@@ -64,7 +65,15 @@ export function ArtworkCard({
         className="overflow-hidden"
       >
         <div className="relative">
-          <img src={imageUrl} alt={alt} className="w-full h-auto block" />
+          <Image
+            src={imageUrl}
+            alt={alt}
+            width={800}
+            height={600}
+            className="w-full h-auto block"
+            sizes={`${width}px`}
+            unoptimized
+          />
           <div
             className={`absolute inset-0 flex items-center justify-center transition-opacity duration-100 ${
               isHovering ? 'opacity-100' : 'opacity-0 pointer-events-none'

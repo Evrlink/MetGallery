@@ -58,16 +58,15 @@ async function clearKeySet(
 }
 
 export async function clearMetGalleryCache(redis: Redis): Promise<void> {
-  const current = await clearKeySet(redis, ARTWORK_IDS_KEY, (id) => artworkKey(id), (id) =>
+  await clearKeySet(redis, ARTWORK_IDS_KEY, (id) => artworkKey(id), (id) =>
     insightKey(id)
   )
-  const legacy = await clearKeySet(
+  await clearKeySet(
     redis,
     LEGACY_ARTWORK_IDS_KEY,
     (id) => legacyArtworkKey(id),
     (id) => legacyInsightKey(id)
   )
-
 }
 
 export {
